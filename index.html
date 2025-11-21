@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>퀴즈 시스템</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+h1 { margin-bottom: 10px; }
+select, button { padding: 8px; margin-right: 10px; }
+#questionArea { margin-top: 20px; }
+.question-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; cursor: pointer; }
+.question-card:hover { background: #f0f0f0; }
+#answerBox { margin-top: 20px; padding: 10px; border: 1px solid #444; background: #fafafa; }
+#nextBtn { margin-top: 10px; padding: 8px 16px; }
+.correct { color: green; font-weight: bold; }
+.wrong { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>퀴즈 시스템</h1>
+
+<select id="subjectSelect">
+    <option value="">과목 선택</option>
+</select>
+
+<select id="themeSelect">
+    <option value="">테마 선택</option>
+</select>
+
+<div id="questionArea"></div>
+<button id="nextBtn">다음 문제</button>
+<div id="answerBox"></div>
+
+<script>
+const jsonURL = "https://kangroo1209-alt.github.io/quizyquiz/output.json";
+
+let quizData = [];
+let currentSubject = "";
+let currentTheme = "";
+let currentAnswer = "";
+
+fetch(jsonURL)
+.then(res => res.json())
+.then(data => {
+    quizData = data;
+    renderSubjects();
+});
+
+const subjectSelect = document.getElementById("subjectSelect");
+const themeSelect = document.getElementById("themeSelect");
+const questionArea = document.getElementById("questionArea");
+const answerBox = document.getElementById("answerBox");
+const nextBtn = document.getElementById("nextBtn");
+
+function renderSubjects() {
+    const subjects = [...new Set(quizData.map(q => q.subject))];
+    subjectSelect.innerHTML = '<option value="">과목 선택</option>' + 
+        subjects.map(s => `<option value="${s}">${s}</option>`).join("");
+}
+
+subjectSelect.addEventListener("change", () => {
+    currentSubject = subjectSelect.value;
+    renderThemes();
+    questionArea.innerHTML = "";
+    answerBox.innerHTML = "";
+});
+
+function renderThemes() {
+    const themes = [...new Set(quizData
+        .filter(q => q.subject === currentSubject)
+        .map(q => q.theme))];
+    themeSelect.innerHTML = '<option value="">테마 선택</option>' +
+        themes.map(t => `<option value="${t}">${t}</option>`).join("");
+}
+
+themeSelect.addEventListener("change", () => {
+    currentTheme = themeSelect.value;
+    renderQuestion();
+    answerBox.innerHTML = "";
+});
+
+// 문제 랜덤 출력
+function renderQuestion() {
+    if(!currentSubject || !currentTheme){
+        questionArea.innerHTML = "<p>과목과 테마를 선택하세요.</p>";
+        return;
+    }
+
+    const filtered = quizData.filter(q => q.subject === currentSubject && q.theme === currentTheme);
+    if(filtered.length === 0){
+        questionArea.innerHTML = "<p>문제가 없습니다.</p>";
+        return;
+    }
+
+    const randIndex = Math.floor(Math.random() * filtered.length);
+    const question = filtered[randIndex];
+    currentAnswer = question.answer;
+
+    // 오답 4개 생성 (같은 테마 내 다른 정답에서)
+    let answers = [currentAnswer];
+    let otherAnswers = filtered.map(q=>q.answer).filter(a=>a!==currentAnswer);
+    while(answers.length < 5 && otherAnswers.length > 0){
+        const idx = Math.floor(Math.random()*otherAnswers.length);
+        answers.push(otherAnswers[idx]);
+        otherAnswers.splice(idx,1);
+    }
+
+    // 섞기
+    answers = answers.sort(() => Math.random() - 0.5);
+
+    // 문제 출력
+    questionArea.innerHTML = `<div class="question-card"><b>문제:</b> ${question.question}</div>`;
+    answers.forEach((ans,i)=>{
+        questionArea.innerHTML += `<div class="question-card" onclick="checkAnswer('${ans.replace(/'/g,"&#39;")}')">${i+1}. ${ans}</div>`;
+    });
+
+    answerBox.innerHTML = "";
+}
+
+// 정답 체크
+window.checkAnswer = (ans) => {
+    if(ans === currentAnswer){
+        answerBox.innerHTML = `<p class="correct">정답입니다!</p>`;
+    } else {
+        answerBox.innerHTML = `<p class="wrong">오답! 정답은 ${currentAnswer}</p>`;
+    }
+}
+
+// 다음 문제 버튼
+nextBtn.addEventListener("click", renderQuestion);
+</script>
+</body>
+</html>
+
