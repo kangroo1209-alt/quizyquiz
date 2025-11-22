@@ -22459,114 +22459,6 @@
     },
     {
         "subject": "약전",
-        "theme": "숫자",
-        "question": "표준온도",
-        "answer": 20
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "상온",
-        "answer": "15~25"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "실온",
-        "answer": "1~30"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "미온",
-        "answer": "30~40"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "냉소",
-        "answer": "1~15"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "냉수",
-        "answer": "10이하"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "미온탕",
-        "answer": "30~40"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "온탕",
-        "answer": "60~70"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "열탕",
-        "answer": 100
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "온용매",
-        "answer": "60~70"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "수욕에서 가열한다",
-        "answer": 100
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "냉침",
-        "answer": "15~25"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "온침",
-        "answer": "35~45"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "방울수 측정 온도",
-        "answer": 20
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "생약의 건조온도",
-        "answer": "60이하"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "안연고제",
-        "answer": "75이하"
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "굴절률측정법",
-        "answer": 20
-    },
-    {
-        "subject": "약전",
-        "theme": "숫자",
-        "question": "알코올수측정법",
-        "answer": 15
-    },
-    {
-        "subject": "약전",
         "theme": "제제총칙",
         "question": "감미 및 방향이 있으며 에탄올을 함유하는 맑은 액상의 내용제",
         "answer": "엘릭서제"
@@ -31691,4 +31583,5 @@
         "question": "이 약의 astragaloside는 심근손상 억제 항당뇨효과를 나타낸다\n이 약은 심근염을 억제하고 창상을 치유하는 역할을 한다",
         "answer": "황기"
     }
+
 ]
