@@ -10,16 +10,10 @@ select, button { padding: 8px; margin-right: 10px; }
 #questionArea { margin-top: 20px; }
 .question-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; cursor: pointer; }
 .question-card:hover { background: #f0f0f0; }
-#answerBox { 
-    margin-top: 20px; 
-    padding: 15px; 
-    border: 2px solid #444; 
-    background: #f8f8ff; 
-    border-radius: 6px;
-}
-.correct { color: green; font-weight: bold; font-size: 18px; }
-.wrong { color: red; font-weight: bold; font-size: 18px; }
+#answerBox { margin-top: 20px; padding: 10px; border: 1px solid #444; background: #fafafa; }
 #nextBtn { margin-top: 10px; padding: 8px 16px; }
+.correct { color: green; font-weight: bold; }
+.wrong { color: red; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -36,18 +30,16 @@ select, button { padding: 8px; margin-right: 10px; }
 
 <div id="questionArea"></div>
 <button id="nextBtn">다음 문제</button>
-
 <div id="answerBox"></div>
 
 <script>
-// ⭐ 너의 GitHub Pages JSON 주소
+// ★★★ 네 GitHub 저장소 경로 (변경됨) ★★★
 const jsonURL = "https://kangroo1209-alt.github.io/quizyquiz/output.json";
 
 let quizData = [];
 let currentSubject = "";
 let currentTheme = "";
-let currentQuestion = "";
-let currentAnswers = [];   // 다중 정답 목록
+let currentAnswers = []; // 다중정답 지원
 
 fetch(jsonURL)
 .then(res => res.json())
@@ -57,15 +49,15 @@ fetch(jsonURL)
 });
 
 const subjectSelect = document.getElementById("subjectSelect");
-const themeSelect = document.getElementById("themeSelect");
-const questionArea = document.getElementById("questionArea");
-const answerBox = document.getElementById("answerBox");
-const nextBtn = document.getElementById("nextBtn");
+const themeSelect   = document.getElementById("themeSelect");
+const questionArea  = document.getElementById("questionArea");
+const answerBox     = document.getElementById("answerBox");
+const nextBtn       = document.getElementById("nextBtn");
 
 function renderSubjects() {
     const subjects = [...new Set(quizData.map(q => q.subject))];
-    subjectSelect.innerHTML =
-        '<option value="">과목 선택</option>' +
+    subjectSelect.innerHTML = 
+        '<option value="">과목 선택</option>' + 
         subjects.map(s => `<option value="${s}">${s}</option>`).join("");
 }
 
@@ -78,11 +70,12 @@ subjectSelect.addEventListener("change", () => {
 
 function renderThemes() {
     const themes = [...new Set(
-        quizData.filter(q => q.subject === currentSubject).map(q => q.theme)
+        quizData.filter(q => q.subject === currentSubject)
+                .map(q => q.theme)
     )];
 
-    themeSelect.innerHTML =
-        '<option value="">테마 선택</option>' +
+    themeSelect.innerHTML = 
+        '<option value="">테마 선택</option>' + 
         themes.map(t => `<option value="${t}">${t}</option>`).join("");
 }
 
@@ -92,9 +85,10 @@ themeSelect.addEventListener("change", () => {
     answerBox.innerHTML = "";
 });
 
-// ⭐ 문제 랜덤 생성
+// 문제 랜덤 생성
 function renderQuestion() {
-    if(!currentSubject || !currentTheme){
+
+    if (!currentSubject || !currentTheme) {
         questionArea.innerHTML = "<p>과목과 테마를 선택하세요.</p>";
         return;
     }
@@ -103,90 +97,45 @@ function renderQuestion() {
         q => q.subject === currentSubject && q.theme === currentTheme
     );
 
-    if(filtered.length === 0){
+    if (filtered.length === 0) {
         questionArea.innerHTML = "<p>문제가 없습니다.</p>";
         return;
     }
 
-    // 1) 랜덤 문제 선택
     const randIndex = Math.floor(Math.random() * filtered.length);
-    const qObj = filtered[randIndex];
+    const problem = filtered[randIndex];
 
-    currentQuestion = qObj.question;
+    // ★★★ 다중정답 처리 (쉼표로 여러 정답 가능) ★★★
+    currentAnswers = problem.answer
+        .split(',')
+        .map(a => a.trim())
+        .filter(a => a.length > 0);
 
-    // 2) 같은 question을 가진 모든 정답 찾기 → 다중정답 처리
-    currentAnswers = filtered
-        .filter(q => q.question === currentQuestion)
-        .map(q => q.answer)
-        .filter((v, i, arr) => arr.indexOf(v) === i); // 중복 제거
+    // ★★★ 보기 생성 (A 방식: 정답 중복 허용) ★★★
+    let candidates = filtered.map(q => q.answer);
 
-    // 대표 정답 1개만 보기 안에 포함
-    const mainAnswer = currentAnswers[0];
+    // 중복 제거
+    candidates = [...new Set(candidates)];
 
-    // 3) 테마 내 모든 답 중에서 오답 후보 수집
-    let allThemeAnswers = filtered.map(q => q.answer);
+    // 랜덤 섞기
+    candidates.sort(() => Math.random() - 0.5);
 
-    //   - 현재 문제의 모든 정답 제거
-    allThemeAnswers = allThemeAnswers.filter(a => !currentAnswers.includes(a));
+    // 정답 포함시키고 보기 5개 확보
+    let answers = [];
 
-    //   - 중복 제거
-    allThemeAnswers = [...new Set(allThemeAnswers)];
-
-    // 4) 오답 4개 랜덤 선택
-    let wrongCandidates = [...allThemeAnswers];
-
-    let choices = [mainAnswer];
-
-    while(choices.length < 5 && wrongCandidates.length > 0){
-        const idx = Math.floor(Math.random() * wrongCandidates.length);
-        choices.push(wrongCandidates[idx]);
-        wrongCandidates.splice(idx, 1);
-    }
-
-    // 부족하면 자동 오류 방지
-    while(choices.length < 5) choices.push("선택지 부족");
-
-    // 5) 보기 섞기
-    choices = choices.sort(() => Math.random() - 0.5);
-
-    // 6) 문제 출력
-    questionArea.innerHTML = `<div class="question-card"><b>문제:</b> ${currentQuestion}</div>`;
-    
-    choices.forEach((ans, i) => {
-        questionArea.innerHTML += `
-            <div class="question-card" onclick="checkAnswer('${ans.replace(/'/g, "\\'")}')">
-                ${i+1}. ${ans}
-            </div>
-        `;
+    // 1️⃣ 정답 먼저 넣기
+    currentAnswers.forEach(ans => {
+        if (!answers.includes(ans)) answers.push(ans);
     });
 
-    // 출력 영역 초기화
-    answerBox.innerHTML = "";
-}
-
-// ⭐ 정답 체크
-window.checkAnswer = (selected) => {
-    const isCorrect = currentAnswers.includes(selected);
-
-    if(isCorrect){
-        answerBox.innerHTML = `
-            <p class="correct">정답입니다!</p>
-            <p><b>정답 목록:</b></p>
-            <ul>${currentAnswers.map(a=>`<li>${a}</li>`).join("")}</ul>
-        `;
-    } else {
-        answerBox.innerHTML = `
-            <p class="wrong">오답입니다!</p>
-            <p><b>정답 목록:</b></p>
-            <ul>${currentAnswers.map(a=>`<li>${a}</li>`).join("")}</ul>
-            <p>선택한 답: ${selected}</p>
-        `;
+    // 2️⃣ 오답 추가해서 5개 맞추기
+    for (let c of candidates) {
+        if (answers.length >= 5) break;
+        if (!answers.includes(c)) answers.push(c);
     }
-};
 
-// 다음 문제 버튼
-nextBtn.addEventListener("click", renderQuestion);
-</script>
-</body>
-</html>
+    // 3️⃣ 최종 섞기
+    answers.sort(() => Math.random() - 0.5);
 
+    // 출력
+    questionArea.inner
