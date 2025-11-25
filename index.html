@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>퀴즈 시스템</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+h1 { margin-bottom: 10px; }
+select, button { padding: 8px; margin-right: 10px; }
+#questionArea { margin-top: 20px; }
+.question-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; cursor: pointer; }
+.question-card:hover { background: #f0f0f0; }
+#answerBox { margin-top: 20px; padding: 10px; border: 1px solid #444; background: #fafafa; }
+#nextBtn { margin-top: 10px; padding: 8px 16px; }
+#resetBtn { margin-top: 10px; padding: 8px 16px; background:#e66; color:white; }
+.correct { color: green; font-weight: bold; }
+.wrong { color: red; font-weight: bold; }
+#countBox { font-size: 15px; margin-top: 10px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>퀴즈 시스템</h1>
+
+<select id="subjectSelect">
+    <option value="">과목 선택</option>
+</select>
+
+<select id="themeSelect">
+    <option value="">테마 선택</option>
+</select>
+
+<div id="questionArea"></div>
+
+<button id="nextBtn">다음 문제</button>
+<button id="resetBtn">리셋</button>
+
+<div id="countBox"></div>
+<div id="answerBox"></div>
+
+<script>
+// ★ 네 GitHub JSON 경로
+const jsonURL = "https://kangroo1209-alt.github.io/quizyquiz/output.json";
+
+let quizData = [];
+let currentSubject = "";
+let currentTheme = "";
+let currentAnswers = [];
+
+// ★ 이미 출제된 문제 저장
+let usedQuestions = [];
+
+fetch(jsonURL)
+.then(res => res.json())
+.then(data => {
+    quizData = data;
+    renderSubjects();
+});
+
+const subjectSelect = document.getElementById("subjectSelect");
+const themeSelect   = document.getElementById("themeSelect");
+const questionArea  = document.getElementById("questionArea");
+const answerBox     = document.getElementById("answerBox");
+const nextBtn       = document.getElementById("nextBtn");
+const resetBtn      = document.getElementById("resetBtn");
+const countBox      = document.getElementById("countBox");
+
+function renderSubjects() {
+    const subjects = [...new Set(quizData.map(q => q.subject))];
+    subjectSelect.innerHTML =
+        '<option value="">과목 선택</option>' +
+        subjects.map(s => `<option value="${s}">${s}</option>`).join("");
+}
+
+subjectSelect.addEventListener("change", () => {
+    currentSubject = subjectSelect.value;
+    renderThemes();
+    usedQuestions = [];
+    countBox.innerHTML = "";
+    answerBox.innerHTML = "";
+    questionArea.innerHTML = "";
+});
+
+function renderThemes() {
+    const themes = [...new Set(
+        quizData.filter(q => q.subject === currentSubject)
+                .map(q => q.theme)
+    )];
+
+    themeSelect.innerHTML =
+        '<option value="">테마 선택</option>' +
+        themes.map(t => `<option value="${t}">${t}</option>`).join("");
+}
+
+themeSelect.addEventListener("change", () => {
+    currentTheme = themeSelect.value;
+    usedQuestions = [];
+    answerBox.innerHTML = "";
+    countBox.innerHTML = "";
+    renderQuestion();
+});
+
+// ----------------------
+// 문제 개수 표시
+// ----------------------
+function updateCountBox(totalCount) {
+    const solved = usedQuestions.length;
+    countBox.innerHTML = `전체 ${totalCount}문제 중 ${solved}문제 풀이`;
+}
+
+// ----------------------
+// 문제 랜덤 생성 (중복 방지)
+// ----------------------
+function renderQuestion() {
+
+    if (!currentSubject || !currentTheme) {
+        questionArea.innerHTML = "<p>과목과 테마를 선택하세요.</p>";
+        return;
+    }
+
+    let filtered = quizData.filter(
+        q => q.subject === currentSubject && q.theme === currentTheme
+    );
+
+    // 전체 문제 수 먼저 계산
+    const totalCount = filtered.length;
+
+    // 출제된 문제 제외
+    filtered = filtered.filter(q => !usedQuestions.includes(q.question));
+
+    if (filtered.length === 0) {
+        questionArea.innerHTML = "<p>모든 문제를 다 풀었습니다.</p>";
+        updateCountBox(totalCount);
+        return;
+    }
+
+    // 랜덤 문제 선택
+    const randIndex = Math.floor(Math.random() * filtered.length);
+    const problem = filtered[randIndex];
+
+    // 사용된 문제로 기록
+    usedQuestions.push(problem.question);
+
+    // 다중 정답
+    currentAnswers = problem.answer
+        .split(',')
+        .map(a => a.trim())
+        .filter(a => a.length > 0);
+
+    // 보기 생성 (A 방식)
+    let candidates = quizData
+        .filter(q => q.subject === currentSubject && q.theme === currentTheme)
+        .map(q => q.answer);
+
+    candidates = [...new Set(candidates)];
+    candidates.sort(() => Math.random() - 0.5);
+
+    let answers = [];
+
+    currentAnswers.forEach(ans => {
+        if (!answers.includes(ans)) answers.push(ans);
+    });
+
+    for (let c of candidates) {
+        if (answers.length >= 5) break;
+        if (!answers.includes(c)) answers.push(c);
+    }
+
+    answers.sort(() => Math.random() - 0.5);
+
+    questionArea.innerHTML = `<div class="question-card"><b>문제:</b> ${problem.question}</div>`;
+
+    answers.forEach((ans, i) => {
+        questionArea.innerHTML += `
+            <div class="question-card" onclick="checkAnswer('${ans.replace(/'/g,"&#39;")}')">
+                ${i+1}. ${ans}
+            </div>
+        `;
+    });
+
+    // ★ 개수 업데이트
+    updateCountBox(totalCount);
+
+    answerBox.innerHTML = "";
+}
+
+// ----------------------
+// 정답 체크
+// ----------------------
+window.checkAnswer = function(selected) {
+    if (currentAnswers.includes(selected)) {
+        answerBox.innerHTML = `
+            <p class="correct">정답입니다!</p>
+            <p>정답 목록: ${currentAnswers.join(", ")}</p>
+        `;
+    } else {
+        answerBox.innerHTML = `
+            <p class="wrong">오답!</p>
+            <p>정답: ${currentAnswers.join(", ")}</p>
+        `;
+    }
+};
+
+// ----------------------
+// 다음 문제
+// ----------------------
+nextBtn.addEventListener("click", renderQuestion);
+
+// ----------------------
+// 리셋 기능
+// ----------------------
+resetBtn.addEventListener("click", () => {
+    usedQuestions = [];
+    countBox.innerHTML = "문제 기록이 초기화되었습니다.";
+    answerBox.innerHTML = "";
+});
+</script>
+
+</body>
+</html>
