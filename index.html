@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>퀴즈 시스템 (사진 포함)</title>
+<style>
+:root{
+  --accent:#68a0ff;
+  --stop:#ff8c42;
+  --card-radius:10px;
+}
+body{
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 12px;
+  background:#fafafa;
+  color:#111;
+}
+.container{ max-width:980px; margin:0 auto; }
+h1{ font-size:1.4rem; margin:6px 0 12px; }
+
+/* controls */
+.controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+.controls select, .controls button { padding:10px; font-size:1rem; border-radius:8px; border:1px solid #ddd; background:white; }
+.controls .spacer{ flex:1; }
+
+/* status */
+#statusBar{ margin-top:8px; font-weight:600; font-size:0.95rem; }
+
+/* question area */
+#questionArea{
+  margin-top:12px;
+  background:white;
+  border-radius:12px;
+  padding:14px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.04);
+}
+
+/* stop button wrapper (위치: 문제 위) */
+.stop-wrapper{ margin:10px 0 6px; display:flex; justify-content:flex-end; }
+#stopBtn{ background:var(--stop); color:white; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; }
+#stopBtn:hover{ background:#ff7a22; }
+
+/* question text + image */
+#qText{ font-weight:700; font-size:1.05rem; }
+#questionImage{ display:block; width:100%; max-height:380px; object-fit:contain; margin-top:12px; border-radius:10px; box-shadow:0 8px 20px rgba(0,0,0,0.08); }
+
+/* option cards */
+.options{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+.question-card{
+  border:1px solid #e2e8f0;
+  background:white;
+  padding:12px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:transform .08s, background .12s;
+  text-align:left;
+}
+.question-card:hover{ transform:translateY(-3px); background:#f7fbff; }
+
+/* answer box */
+#answerBox{
+  margin-top:12px;
+  background:white;
+  border-radius:10px;
+  padding:12px;
+  border:1px solid #eee;
+  min-height:120px;
+}
+
+/* inputs */
+#textAnswerBox{ width:100%; padding:10px; margin-top:8px; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; font-size:1rem; }
+.controls .btn-primary{ background:var(--accent); color:#fff; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; font-weight:700; }
+.controls .btn-ghost{ background:white; border:1px solid #ddd; padding:10px 12px; border-radius:8px; cursor:pointer; }
+
+/* misc */
+.correct{ color:green; font-weight:700; }
+.wrong{ color:#d43f3f; font-weight:700; }
+
+/* mini mode highlight */
+.mini-mode .question-card,
+.mini-mode #answerBox{ background:#fffbe6 !important; }
+
+/* responsive */
+@media (max-width:720px){
+  .controls{ flex-direction:column; align-items:stretch; }
+  #questionImage{ max-height:260px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>퀴즈 시스템</h1>
+
+  <div class="controls">
+    <select id="subjectSelect"><option value="">과목 선택</option></select>
+    <select id="themeSelect"><option value="">테마 선택</option></select>
+    <div class="spacer"></div>
+    <button id="miniTestBtn" class="btn-primary">🔥 Mini Test (과목별 10문제)</button>
+    <button id="resetBtn" class="btn-ghost" style="display:none;">🔄 리셋</button>
+  </div>
+
+  <div id="statusBar"></div>
+
+  <!-- 여기까지만 풀기 버튼 (문제 영역 위) -->
+  <div class="stop-wrapper">
+    <button id="stopBtn" style="display:none;">여기까지만 풀기 ㅜㅜ</button>
+  </div>
+
+  <div id="questionArea">
+    <div id="qText"></div>
+    <img id="questionImage" style="display:none;" alt="question image" />
+    <div id="optionsArea" class="options"></div>
+
+    <input id="textAnswerBox" placeholder="정답을 입력하세요" style="display:none;" />
+    <div style="margin-top:10px;">
+      <button id="submitBtn" class="btn-primary" style="display:none;">제출</button>
+      <button id="nextBtn" class="btn-ghost">다음 문제</button>
+    </div>
+  </div>
+
+  <div id="answerBox"></div>
+</div>
+
+<script>
+/* ---------- 설정 ---------- */
+const jsonURL = "https://kangroo1209-alt.github.io/quizyquiz/output.json";
+const imageExtRe = /\.(jpg|jpeg|png|gif|bmp|webp)$/i;
+
+/* ---------- 상태 ---------- */
+let quizData = [];
+let currentSubject = "";
+let currentTheme = "";
+let currentQuestion = null;
+let usedQuestions = new Set();
+
+let solvedCount = 0, totalCount = 0;
+
+let miniMode = false;
+let miniList = [], miniIndex = 0, miniWrong = [], miniTotal = 0;
+
+/* ---------- DOM ---------- */
+const subjectSelect = document.getElementById("subjectSelect");
+const themeSelect = document.getElementById("themeSelect");
+const statusBar = document.getElementById("statusBar");
+const stopBtn = document.getElementById("stopBtn");
+const resetBtn = document.getElementById("resetBtn");
+const miniTestBtn = document.getElementById("miniTestBtn");
+const nextBtn = document.getElementById("nextBtn");
+const submitBtn = document.getElementById("submitBtn");
+const qText = document.getElementById("qText");
+const questionImage = document.getElementById("questionImage");
+const optionsArea = document.getElementById("optionsArea");
+const textAnswerBox = document.getElementById("textAnswerBox");
+const answerBox = document.getElementById("answerBox");
+
+/* ---------- 데이터 로드 ---------- */
+fetch(jsonURL).then(r=>r.json()).then(data=>{
+  quizData = data || [];
+  renderSubjects();
+}).catch(e=>{
+  console.error("JSON 로드 실패:", e);
+  quizData = [];
+  renderSubjects();
+});
+
+/* ---------- UI 헬퍼 ---------- */
+function applyMiniModeUI(on){
+  if(on) document.body.classList.add("mini-mode"); else document.body.classList.remove("mini-mode");
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+/* ---------- 과목/테마 렌더 ---------- */
+function renderSubjects(){
+  const subs = [...new Set(quizData.map(q=>q.subject))];
+  subjectSelect.innerHTML = '<option value="">과목 선택</option>' + subs.map(s=>`<option>${s}</option>`).join('');
+}
+subjectSelect.addEventListener("change",()=>{
+  currentSubject = subjectSelect.value;
+  renderThemes();
+  resetNormal();
+});
+function renderThemes(){
+  if(!currentSubject){ themeSelect.innerHTML = '<option value="">테마 선택</option>'; return; }
+  const themes = [...new Set(quizData.filter(q=>q.subject===currentSubject).map(q=>q.theme))];
+  themeSelect.innerHTML = '<option value="">테마 선택</option>' + themes.map(t=>`<option>${t}</option>`).join('');
+}
+themeSelect.addEventListener("change",()=>{
+  currentTheme = themeSelect.value;
+  miniMode = false;
+  applyMiniModeUI(false);
+  resetNormal();
+  renderQuestion();
+});
+
+/* ---------- 상태바 ---------- */
+function updateStatusBar(){
+  if(miniMode){
+    const sub = miniList[miniIndex] ? miniList[miniIndex].subject : "";
+    statusBar.innerHTML = `🔥 Mini Test 진행중 · 현재 과목: ${sub} · ${miniIndex}/${miniTotal}`;
+    return;
+  }
+  if(currentSubject && currentTheme){
+    statusBar.innerHTML = `📘 ${currentSubject} / ${currentTheme} · 푼문제: ${solvedCount}/${totalCount}`;
+    return;
+  }
+  statusBar.innerHTML = "";
+}
+
+/* ---------- 리셋(일반모드) ---------- */
+function resetNormal(){
+  usedQuestions.clear();
+  solvedCount = 0;
+  const list = quizData.filter(q=>q.subject===currentSubject && q.theme===currentTheme);
+  totalCount = list.length;
+  updateStatusBar();
+  answerBox.innerHTML = "";
+  clearQuestionUI();
+  resetBtn.style.display = (currentSubject && currentTheme) ? "inline-block" : "none";
+}
+resetBtn.addEventListener("click", resetNormal);
+
+/* ---------- 정답 가져오기 (subject/theme 기반) ---------- */
+function getCorrectAnswersFor(qText, subj=currentSubject, theme=currentTheme){
+  return [...new Set( quizData.filter(i=> i.subject===subj && i.theme===theme && i.question===qText ).map(i=>i.answer) )];
+}
+
+/* ---------- 문제 내기 (일반모드) ---------- */
+function renderQuestion(){
+  if(!currentSubject || !currentTheme){
+    clearQuestionUI(); qText.innerHTML = "<p>과목과 테마를 선택해 주세요.</p>"; return;
+  }
+  const list = quizData.filter(q=>q.subject===currentSubject && q.theme===currentTheme);
+  const remain = list.filter(q=>!usedQuestions.has(q.question));
+  if(remain.length === 0){ clearQuestionUI(); qText.innerHTML = "<p>🎉 모든 문제 완료!</p>"; return; }
+  const q = remain[Math.floor(Math.random()*remain.length)];
+  currentQuestion = q;
+  usedQuestions.add(q.question);
+  solvedCount++;
+  updateStatusBar();
+  renderQuestionCard(q);
+}
+
+/* ---------- UI 초기화 ---------- */
+function clearQuestionUI(){
+  qText.innerHTML = "";
+  questionImage.style.display = "none";
+  optionsArea.innerHTML = "";
+  textAnswerBox.style.display = "none";
+  submitBtn.style.display = "none";
+}
+
+/* ---------- 문제 렌더(텍스트/객관식/계산/사진 통합) ---------- */
+function renderQuestionCard(q){
+  const correctList = getCorrectAnswersFor(q.question, q.subject, q.theme);
+  const mainAnswer = correctList[0];
+
+  // 초기화
+  clearQuestionUI();
+  answerBox.innerHTML = "";
+
+  const themeKey = (q.theme||"").toString().toLowerCase();
+  const isPhotoTheme = themeKey === "photo" || themeKey === "사진" || imageExtRe.test(String(q.question||""));
+  const isCalc = themeKey === "calc" || themeKey === "계산";
+
+  if(isPhotoTheme){
+    qText.innerHTML = `<b>문제:</b> 사진을 보고 정답을 고르세요.`;
+    const imgPath = `images/${encodeURIComponent(q.subject)}/${encodeURIComponent(q.question)}`;
+    questionImage.src = imgPath;
+    questionImage.style.display = "block";
+
+    // 후보: 같은 subject+theme의 answer들
+    let candidates = quizData.filter(i=> i.subject===q.subject && i.theme===q.theme && i.answer!==mainAnswer ).map(i=>i.answer);
+    candidates = [...new Set(candidates)];
+    let wrongs = shuffle(candidates).slice(0,4);
+
+    // 후보 부족 시 보완: 같은 subject 내 다른 theme에서 뽑기
+    if(wrongs.length < 4){
+      const backup = [...new Set( quizData.filter(i=> i.subject===q.subject && i.answer!==mainAnswer).map(i=>i.answer) )].filter(x=>!wrongs.includes(x));
+      wrongs = wrongs.concat(shuffle(backup).slice(0, 4 - wrongs.length));
+    }
+
+    const answers = shuffle([mainAnswer, ...wrongs]).slice(0, Math.min(5, 1 + wrongs.length));
+    answers.forEach(ans=>{
+      const d = document.createElement("div");
+      d.className = "question-card";
+      d.textContent = ans;
+      d.onclick = ()=> showAnswerResult(ans === mainAnswer, mainAnswer, correctList);
+      optionsArea.appendChild(d);
+    });
+    return;
+  }
+
+  if(isCalc){
+    qText.innerHTML = `<b>문제:</b> ${q.question}`;
+    textAnswerBox.style.display = "block";
+    submitBtn.style.display = "inline-block";
+    submitBtn.onclick = ()=>{
+      const user = textAnswerBox.value.trim();
+      const isCorrect = compareAnswer(user, mainAnswer);
+      showAnswerResult(isCorrect, mainAnswer, correctList);
+      textAnswerBox.value = "";
+      // 일반 모드일 경우 자동으로 다음 문제로 진행
+      if(!miniMode){
+        setTimeout(()=>{ renderQuestion(); }, 200);
+      }
+    };
+    return;
+  }
+
+  // 기본 객관식: 같은 subject+theme의 다른 answer 사용
+  qText.innerHTML = `<b>문제:</b> ${q.question}`;
+  let others = quizData.filter(i=> i.subject===q.subject && i.theme===q.theme && i.question !== q.question).map(i=>i.answer);
+  others = [...new Set(others)];
+  let picks = shuffle(others).slice(0,4);
+  const options = shuffle([mainAnswer, ...picks]).slice(0, Math.min(5, 1 + picks.length));
+  options.forEach(opt=>{
+    const d = document.createElement("div");
+    d.className = "question-card";
+    d.textContent = opt;
+    d.onclick = ()=> showAnswerResult(opt === mainAnswer, mainAnswer, correctList);
+    optionsArea.appendChild(d);
+  });
+}
+
+/* ---------- 정답 결과 표시 및 미니진행 ---------- */
+function showAnswerResult(isCorrect, mainAnswer, correctList){
+  if(isCorrect){
+    answerBox.innerHTML = `<p class="correct">정답입니다!</p><p>다른 정답들: ${correctList.join(", ")}</p>`;
+  } else {
+    answerBox.innerHTML = `<p class="wrong">오답입니다!</p><p>정답: ${mainAnswer}</p><p>다른 정답들: ${correctList.join(", ")}</p>`;
+  }
+  handleMiniProgress(isCorrect);
+}
+
+/* ---------- 숫자/문자 비교 ---------- */
+function compareAnswer(user, correct){
+  if(!isNaN(user) && !isNaN(correct)) return parseFloat(user) === parseFloat(correct);
+  return String(user).trim() === String(correct).trim();
+}
+
+/* ---------- 다음 버튼(일반) ---------- */
+nextBtn.addEventListener("click", ()=> {
+  if(!miniMode){
+    // 계산창이 열려있으면 제출 클릭 트리거 (submitBtn이 visible할 때)
+    if(textAnswerBox.style.display !== "none" && submitBtn.style.display !== "none"){
+      submitBtn.click();
+      return;
+    }
+    renderQuestion();
+  }
+});
+
+/* ---------- Mini Test ---------- */
+miniTestBtn.addEventListener("click", startMiniTest);
+function startMiniTest(){
+  if(!currentSubject){ alert("먼저 과목을 선택하세요."); return; }
+  miniMode = true; applyMiniModeUI(true);
+  nextBtn.style.display = "none"; stopBtn.style.display = "inline-block";
+  usedQuestions.clear(); miniWrong = []; miniIndex = 0; miniList = [];
+
+  // 과목별로 최대 10개씩 뽑음
+  const subs = [...new Set(quizData.map(q=>q.subject))];
+  subs.forEach(sub=>{
+    const pool = quizData.filter(q=> q.subject === sub);
+    let pick = [];
+    while(pick.length < 10 && pool.length > 0){
+      const i = Math.floor(Math.random() * pool.length);
+      pick.push(pool[i]); pool.splice(i,1);
+    }
+    miniList = miniList.concat(pick);
+  });
+  miniTotal = miniList.length;
+  updateStatusBar();
+  renderMiniQuestion();
+}
+
+function renderMiniQuestion(){
+  if(miniIndex >= miniTotal){ showMiniResult(); return; }
+  const q = miniList[miniIndex];
+  currentQuestion = q;
+  // 임시로 currentSubject/currentTheme 세팅 (중요)
+  currentSubject = q.subject; currentTheme = q.theme;
+  renderQuestionCard(q);
+  updateStatusBar();
+}
+
+function handleMiniProgress(isCorrect){
+  if(miniMode){
+    if(!isCorrect){
+      miniWrong.push({
+        question: currentQuestion.question,
+        correct: getCorrectAnswersFor(currentQuestion.question, currentQuestion.subject, currentQuestion.theme)
+      });
+    }
+    miniIndex++;
+    setTimeout(renderMiniQuestion, 400);
+  }
+}
+
+/* ---------- 여기까지만 풀기 ---------- */
+stopBtn.addEventListener("click", ()=>{
+  miniMode = false; applyMiniModeUI(false);
+  showMiniResult();
+});
+
+/* ---------- Mini 결과 ---------- */
+function showMiniResult(){
+  nextBtn.style.display = "inline-block"; stopBtn.style.display = "none";
+  const totalSolved = miniIndex;
+  const wrongCount = miniWrong.length;
+  const correctCount = totalSolved - wrongCount;
+  let html = `<h2>Mini Test 완료!</h2>`;
+  html += `<p>총 푼 문제: ${totalSolved}</p><p>정답: ${correctCount}</p><p>오답: ${wrongCount}</p>`;
+  if(wrongCount>0){
+    html += `<h3>틀린 문제들</h3>`;
+    miniWrong.forEach(w=>{
+      html += `<p><b>${w.question}</b><br>정답: ${w.correct.join(", ")}</p><hr>`;
+    });
+  }
+  qText.innerHTML = html;
+  questionImage.style.display = "none";
+  optionsArea.innerHTML = "";
+  answerBox.innerHTML = "";
+  statusBar.innerHTML = "";
+  applyMiniModeUI(false);
+}
+
+/* ---------- shuffle util ---------- */
+function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+</script>
+</body>
+</html>
