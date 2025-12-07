@@ -230,7 +230,7 @@
 {"subject": "약용식물학", "theme": "과 맞추기", "question": "오수유", "answer": "운향과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약용식물학", "theme": "과 맞추기", "question": "백선", "answer": "운향과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약용식물학", "theme": "과 맞추기", "question": "소태나무", "answer": "소태나무과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
-{"subject": "약용식물학", "theme": "과 맞추기", "question": "고목", "answer": "운향과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
+{"subject": "약용식물학", "theme": "과 맞추기", "question": "고목", "answer": "소태나무과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약용식물학", "theme": "과 맞추기", "question": "원지", "answer": "원지과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약용식물학", "theme": "과 맞추기", "question": "붉나무", "answer": "옻나무과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약용식물학", "theme": "과 맞추기", "question": "오배자", "answer": "옻나무과", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
@@ -6491,4 +6491,5 @@
 {"subject": "약물학", "theme": "문제", "question": "양성자 pump 억제약으로 위궤양을 치료한다", "answer": "Esomeprazole", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약물학", "theme": "문제", "question": "양성자 pump 억제약으로 위궤양을 치료한다", "answer": "Lanosoprazole", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""},
 {"subject": "약물학", "theme": "문제", "question": "위궤양으로 인한 출혈과 H.pylori 감염에 사용한다", "answer": "Omeprazole", "column_5": "", "column_6": "", "column_7": "", "column_8": "", "column_9": ""}
+
 ]
