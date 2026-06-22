@@ -88,7 +88,7 @@
 {"subject": "약품분석학", "theme": "정의", "question": "콜로이드 용액에 대한 설명으로 옳은 것은?", "answer": "빛에의해 틴들현상", "null": ""},
 {"subject": "약품분석학", "theme": "정의", "question": "H3PO4와 H2SO4의 혼합용액에 M.0(메틸오렌지)를 넣고 NaOH 표준액으로 적정할 때 일어나는 현상은?", "answer": "제1당량점까지 중화", "null": ""},
 {"subject": "약품분석학", "theme": "정의", "question": "NaCN의 용액에 K2CrO4를 지시약으로 넣고 AgNO3 표준액으로 적정하는 방법은?", "answer": "MOhr법", "null": ""},
-{"subject": "", "theme": "정의", "question": "산화성 물질의 용액에 Kl를 가하여 생성되는 물질을 Na2S2O3 표준액을 적정하는 방법은?", "answer": "iodometry", "null": ""},
+{"subject": "약품분석학", "theme": "정의", "question": "산화성 물질의 용액에 Kl를 가하여 생성되는 물질을 Na2S2O3 표준액을 적정하는 방법은?", "answer": "iodometry", "null": ""},
 {"subject": "약품분석학", "theme": "정의", "question": "황금 추출물에서 baicalin 함량을 측정할 때 적합한 분석법은?", "answer": "액체크로마토그래프법", "null": ""},
 {"subject": "약품분석학", "theme": "계산", "question": "시료 200ml에 지시약 EBT를 넣고 표준액 0.01M EDTA(f=1.000)fh 적정한 결과, 표준액 20ml가 소비되었다. CaCO3(M.W=100)FH 환산한 이 시료의 경도(ppm)는?", "answer": "", "null": ""},
 {"subject": "약품분석학", "theme": "계산", "question": "0.18M CH3COONa 염을 녹인 수용액의 pH값은?(단 CH3COOH의 Ka=1.8*10^-5로 계산한다.)", "answer": 9, "null": ""},
